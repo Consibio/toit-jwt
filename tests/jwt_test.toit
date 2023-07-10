@@ -42,3 +42,13 @@ main:
     result_hs512 := jwt.sign --payload=payload --secret=secret --algorithm="HS512"
     expect (result_hs512 == target_jwt_hs512) --message="JWTs should match using HS512"
 
+    /**
+    Test JWT verification using HS265
+    */
+    expect (jwt.verify --token=target_jwt_hs256 --secret=secret --algorithm="HS256") --message="JWT should be verified using HS256"
+    expect (jwt.verify --token=target_jwt_hs384 --secret=secret --algorithm="HS384") --message="JWT should be verified using HS384"
+    expect (jwt.verify --token=target_jwt_hs512 --secret=secret --algorithm="HS512") --message="JWT should be verified using HS512"
+
+    // Induce error and assert, that verification fails
+    faulty_target_jwt_hs256 := target_jwt_hs256.replace "e" "E"
+    expect_not (jwt.verify --token=faulty_target_jwt_hs256 --secret=secret --algorithm="HS256") --message="Faulty JWT should not be verified using HS256"
