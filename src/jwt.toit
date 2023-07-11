@@ -23,18 +23,29 @@ sign --payload/Map --secret/string --algorithm/string="HS256":
   return "$header_b64.$payload_b64.$(signature_b64)"
 
 
-verify --token/string --secret/string --algorithm/string="HS256" -> bool:
+verify --token/string --secret/string --algorithm/string="HS256" --throwing/bool=true -> bool:
   if not SUPPORTED_ALGORITHMS.contains algorithm: throw "JWTVerifyError: Unsupported algorithm: $algorithm"
 
   header_b64 := (token.split ".")[0]
   payload_b64 := (token.split ".")[1]
   signature_b64 := (token.split ".")[2]
 
+  // Check if the token is expired
   payload_json := (base64.decode payload_b64 --url_mode).to_string
   payload := json.parse payload_json
+  exp := payload.get "exp"
+  if exp != null:
+    expires := Time.epoch --s=(payload.get "exp")
+    if expires < Time.now: 
+      if throwing: throw "JWTVerifyError: Token expired"
+      return false
 
+  // Compute signature and check if the signatures matches
   computed_signature := compute_signature_ --jwt_content="$header_b64.$payload_b64" --secret=secret --algorithm=algorithm
-  return signature_b64 == computed_signature
+  match := signature_b64 == computed_signature
+
+  if throwing and not match: throw "JWTVerifyError: Token signature mismatch"
+  return match
 
 
 compute_signature_ --jwt_content/string --secret/string --algorithm/string="HS256" -> string:

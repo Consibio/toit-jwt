@@ -7,6 +7,9 @@ import jwt
 import expect show *
 
 main:
+    /**
+    Test JWT signing and verification using pre-defined payload and secret and compare it against output of https://jwt.io/
+    */
     payload := {
         "aud": "audience",
         "sub": "1234567890",
@@ -43,12 +46,18 @@ main:
     expect (result_hs512 == target_jwt_hs512) --message="JWTs should match using HS512"
 
     /**
-    Test JWT verification using HS265
+    Test JWT verification using HS265, HS384 and HS512
     */
-    expect (jwt.verify --token=target_jwt_hs256 --secret=secret --algorithm="HS256") --message="JWT should be verified using HS256"
-    expect (jwt.verify --token=target_jwt_hs384 --secret=secret --algorithm="HS384") --message="JWT should be verified using HS384"
-    expect (jwt.verify --token=target_jwt_hs512 --secret=secret --algorithm="HS512") --message="JWT should be verified using HS512"
 
-    // Induce error and assert, that verification fails
-    faulty_target_jwt_hs256 := target_jwt_hs256.replace "e" "E"
-    expect_not (jwt.verify --token=faulty_target_jwt_hs256 --secret=secret --algorithm="HS256") --message="Faulty JWT should not be verified using HS256"
+    // Updated "exp" field of payload to be in the future, instead of the predefined value, which is in the past and will cause a verification error
+    payload["exp"] = ((Time.now).plus --h=1).s_since_epoch
+    up_to_date_token_hs256 := jwt.sign --payload=payload --secret=secret --algorithm="HS256"
+    up_to_date_token_hs384 := jwt.sign --payload=payload --secret=secret --algorithm="HS384"
+    up_to_date_token_hs512 := jwt.sign --payload=payload --secret=secret --algorithm="HS512"
+
+    expect_no_throw: (jwt.verify --token=up_to_date_token_hs256 --secret=secret --algorithm="HS256")
+    expect_no_throw: (jwt.verify --token=up_to_date_token_hs384 --secret=secret --algorithm="HS384")
+    expect_no_throw: (jwt.verify --token=up_to_date_token_hs512 --secret=secret --algorithm="HS512")
+
+    // Test with predefined target token, which should have expired
+    expect_throw "JWTVerifyError: Token expired": jwt.verify --token=target_jwt_hs256 --secret=secret --algorithm="HS256"
