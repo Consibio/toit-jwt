@@ -20,6 +20,11 @@ Verifying
 is_valid := jwt.verify --token=token --secret=secret --algorithm=algorithm
 
 /**
+Is expired?
+*/
+is_expired := jwt.is_expired --token=token
+
+/**
 Verify non-throwing
 
 Be default, jwt.verify will throw an error, if verification fails.

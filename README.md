@@ -16,6 +16,8 @@ secret := "super-secret-key"
 
 token := jwt.sign --payload=payload --secret=secret --algorithm="HS256"
 is_valid := jwt.verify --token=token --secret=secret --algorithm=algorithm
+
+is_expired := jwt.is_expired --token=token
 ```
 
 ## Algorithms

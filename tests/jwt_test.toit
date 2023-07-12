@@ -61,3 +61,9 @@ main:
 
     // Test with predefined target token, which should have expired
     expect_throw "JWTVerifyError: Token expired": jwt.verify --token=target_jwt_hs256 --secret=secret --algorithm="HS256"
+
+    /**
+    Test that is_expired convenience method works
+    */
+    expect      (jwt.is_expired --token=target_jwt_hs256) --message="Token should be expired"
+    expect_not  (jwt.is_expired --token=up_to_date_token_hs512) --message="Token should not be expired"
