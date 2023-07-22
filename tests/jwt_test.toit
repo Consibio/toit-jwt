@@ -67,3 +67,10 @@ main:
     */
     expect      (jwt.is_expired --token=target_jwt_hs256) --message="Token should be expired"
     expect_not  (jwt.is_expired --token=up_to_date_token_hs512) --message="Token should not be expired"
+
+    /**
+    Test that expires and expires_soon convenience methods works
+    */
+    expect      ((jwt.expires --token=up_to_date_token_hs256) == (Time.epoch --s=payload["exp"])) --message="expires should return the same value as the payload's exp field but as a Time object"
+    expect      ((jwt.expires_soon --token=up_to_date_token_hs256 --h=1 --s=10)) --message="expires_soon should be true, as the token expires in 1 hour and the within-cutoff is set to 1h + 10s"
+    expect_not  ((jwt.expires_soon --token=up_to_date_token_hs256 --m=59 --s=59)) --message="expires_soon should not be true, as the token expires in 1 hour and the within-cutoff is set to 1h minus 1s"

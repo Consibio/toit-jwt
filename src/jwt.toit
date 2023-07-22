@@ -12,6 +12,10 @@ import crypto.hmac as hmac
 
 SUPPORTED_ALGORITHMS ::= ["HS256", "HS384", "HS512"]
 
+/**
+Sign a JWT using the given payload and secret with the given algorithm. 
+Default algorithm is HS256.
+*/
 sign --payload/Map --secret/string --algorithm/string="HS256":
   if not SUPPORTED_ALGORITHMS.contains algorithm: throw "JWTSignError: Unsupported algorithm: $algorithm"
 
@@ -23,6 +27,12 @@ sign --payload/Map --secret/string --algorithm/string="HS256":
   return "$header_b64.$payload_b64.$(signature_b64)"
 
 
+/**
+Verify a JWT using the given secret and algorithm.
+
+By default, the verify methods throws an error if the token is expired or the signature does not match.
+If you want to handle these cases yourself, you can set throwing to false, and the method will false, if verification fails.
+*/
 verify --token/string --secret/string --algorithm/string="HS256" --throwing/bool=true -> bool:
   if not SUPPORTED_ALGORITHMS.contains algorithm: throw "JWTVerifyError: Unsupported algorithm: $algorithm"
 
@@ -40,16 +50,42 @@ verify --token/string --secret/string --algorithm/string="HS256" --throwing/bool
   if throwing and not match: throw "JWTVerifyError: Token signature mismatch"
   return match
 
-is_expired --token/string -> bool:
+/**
+Get a $Time representing when the token expires.
+Throws an error if the token has no expiration (ie. the "exp" field is empty)
+*/
+expires --token/string -> Time:
   payload_b64 := (token.split ".")[1]
   payload_json := (base64.decode payload_b64 --url_mode).to_string
   payload := json.parse payload_json
   exp := payload.get "exp"
-  if exp != null:
-    expires := Time.epoch --s=(payload.get "exp")
-    return expires < Time.now    
+  if exp == null: throw "JWTExpiryError: Token has no expiration"
+  return Time.epoch --s=(payload.get "exp")
+
+
+/**
+Check if the token expires within the given time.
+Defaults to 5min, if nothing is set.
+*/
+expires_soon --token/string --h/int=0 --m/int=0 --s/int=0 -> bool:
+  // Default to 5 minutes, if nothing is set
+  if h==0 and m==0 and s==0: m=5
+
+  expire_time := expires --token=token
+  return (Time.now.to expire_time) < (Duration --h=h --m=m --s=s)
+
+/**
+Check if the token is expired.
+*/
+is_expired --token/string -> bool:
+  catch:
+    expire_time := expires --token=token
+    return (expire_time < Time.now)
   return true
 
+/**
+Compute the signature of the given JWT content using the given secret and algorithm.
+*/
 compute_signature_ --jwt_content/string --secret/string --algorithm/string="HS256" -> string:
 
   signature := null
