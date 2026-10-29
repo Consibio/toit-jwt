@@ -20,6 +20,23 @@ is_valid := jwt.verify --token=token --secret=secret --algorithm=algorithm
 is_expired := jwt.is_expired --token=token
 ```
 
+### ES256
+
+ES256 signs with an EC P-256 private key from `crypto.ec`. The signature is the raw 64-byte
+`r||s` form that JWTs use (RFC 7518, section 3.4), not the DER form that `EcKey.sign` returns.
+
+```
+import crypto.ec as ec
+import jwt
+
+key_pair := ec.EcKeyPair.generate  // P-256 by default
+token := jwt.sign --payload=payload --key=key_pair.private_key --header={"kid": "my-key"}
+is_valid := jwt.verify --token=token --key=key_pair.public_key
+```
+
+`verify` checks that the token's header names the expected algorithm, so a token can't choose
+how it is verified.
+
 ## Algorithms
 
 ### Supported algorithms
@@ -29,6 +46,7 @@ is_expired := jwt.is_expired --token=token
 | HS256               | HMAC using SHA-256     |
 | HS384               | HMAC using SHA-384     |
 | HS512               | HMAC using SHA-512     |
+| ES256               | ECDSA using P-256 and SHA-256 |
 
 
 ### Algorithms not yet supported
@@ -49,6 +67,5 @@ If you need this anyways, please open an issue.
 | PS256               | RSASSA-PSS using SHA-256             |
 | PS384               | RSASSA-PSS using SHA-384             |
 | PS512               | RSASSA-PSS using SHA-512             |
-| ES256               | ECDSA using P-256 curve and SHA-256  |
 | ES384               | ECDSA using P-384 curve and SHA-384  |
 | ES512               | ECDSA using P-521 curve and SHA-512  |
