@@ -1,0 +1,25 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: toitlang/action-setup@v1
+        with:
+          toit-version: v2.0.0-alpha.199
+
+      - name: Analyze
+        run: |
+          toit analyze src/jwt.toit
+          (cd tests && toit analyze jwt_test.toit)
+
+      - name: Test
+        working-directory: tests
+        run: toit run jwt_test.toit
